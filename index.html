@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SDGs 17 올림픽 대륙별 모둠 매칭</title>
+  <style>
+    @font-face {
+      font-family: 'CookieRun';
+      src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.1/CookieRun-Black.woff') format('woff');
+      font-weight: 900;
+      font-style: normal;
+    }
+
+    :root {
+      --asia: #ef4444; 
+      --na: #3b82f6; 
+      --sa: #a855f7; 
+      --europe: #eab308; 
+      --africa: #22c55e; 
+      --oceania: #f97316; 
+      --bg: #f8fafc;
+      --text: #1e293b;
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'CookieRun', 'Malgun Gothic', sans-serif;
+    }
+    
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      overflow-x: hidden;
+      padding-top: 20px;
+    }
+
+    .map-container {
+      position: relative;
+      width: 90vw;
+      max-width: 1000px;
+      aspect-ratio: 16 / 9; 
+      background-image: url('image_34ec36.png'); /* 맵 이미지 필수 */
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+      border: 8px solid #0047AB;
+      border-radius: 20px;
+      background-color: #f4f4f4;
+      margin-bottom: 20px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    }
+
+    .continent-zone {
+      position: absolute;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 10px;
+      z-index: 10;
+    }
+
+    #zone-na { top: 15%; left: 10%; width: 25%; height: 40%; }
+    #zone-sa { top: 55%; left: 20%; width: 20%; height: 40%; }
+    #zone-europe { top: 20%; left: 38%; width: 20%; height: 30%; }
+    #zone-africa { top: 48%; left: 45%; width: 18%; height: 40%; }
+    #zone-asia { top: 15%; left: 60%; width: 35%; height: 40%; }
+    #zone-oceania { top: 60%; left: 70%; width: 25%; height: 30%; }
+
+    /* 대륙에 표시될 모둠 번호 뱃지 */
+    .member-badge {
+      background: rgba(255, 255, 255, 0.95);
+      padding: 8px 16px;
+      border-radius: 12px;
+      font-size: clamp(1.2rem, 2vw, 1.8rem);
+      font-weight: 900;
+      border: 4px solid;
+      box-shadow: 3px 3px 8px rgba(0,0,0,0.3);
+      opacity: 0;
+      transform: translateY(-50px) scale(0.5);
+      transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .flag-drop {
+      position: fixed;
+      width: 60px;
+      height: 80px;
+      background-size: contain;
+      background-repeat: no-repeat;
+      pointer-events: none;
+      z-index: 1000;
+      opacity: 0;
+    }
+
+    .input-wrapper {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: white;
+      padding: 20px;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+      border: 3px solid var(--na);
+      z-index: 100;
+      width: 250px;
+      transition: transform 0.3s;
+      text-align: center;
+    }
+    .input-wrapper.hidden {
+      transform: translateX(120%);
+    }
+
+    .toggle-btn {
+      position: absolute;
+      top: -15px;
+      left: -15px;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--na);
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 1.2rem;
+      box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+    }
+
+    .btn-action {
+      width: 100%;
+      padding: 16px;
+      font-size: 1.4rem;
+      background-color: var(--asia);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 900;
+      box-shadow: 2px 4px 0px #991b1b;
+      margin-bottom: 12px;
+    }
+    .btn-action:active {
+      transform: translate(2px, 2px);
+      box-shadow: 0px 0px 0px;
+    }
+    
+    .btn-reset {
+      background-color: #64748b;
+      box-shadow: 2px 4px 0px #334155;
+      font-size: 1.2rem;
+      padding: 12px;
+    }
+
+    @keyframes flyIn {
+      0% {
+        transform: translate(var(--startX), var(--startY)) scale(3) rotate(45deg);
+        opacity: 0;
+      }
+      20% { opacity: 1; }
+      100% {
+        transform: translate(var(--endX), var(--endY)) scale(1) rotate(0deg);
+        opacity: 1;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="map-container" id="map">
+    <div class="continent-zone" id="zone-na"></div>
+    <div class="continent-zone" id="zone-europe"></div>
+    <div class="continent-zone" id="zone-asia"></div>
+    <div class="continent-zone" id="zone-sa"></div>
+    <div class="continent-zone" id="zone-africa"></div>
+    <div class="continent-zone" id="zone-oceania"></div>
+  </div>
+
+  <div class="input-wrapper" id="control-panel">
+    <button class="toggle-btn" onclick="togglePanel()">⇄</button>
+    <div style="font-weight:bold; margin-bottom:15px; font-size:1.1rem;">1~6 모둠 대륙 추첨</div>
+    <button class="btn-action" onclick="startDraw()">추첨 시작!</button>
+    <button class="btn-action btn-reset" onclick="resetDraw()">초기화</button>
+  </div>
+
+  <script>
+    const controlPanel = document.getElementById('control-panel');
+    
+    const continents = [
+      { id: 'zone-na', name: '북아메리카', color: 'var(--na)' },
+      { id: 'zone-europe', name: '유럽', color: 'var(--europe)' },
+      { id: 'zone-asia', name: '아시아', color: 'var(--asia)' },
+      { id: 'zone-sa', name: '남아메리카', color: 'var(--sa)' },
+      { id: 'zone-africa', name: '아프리카', color: 'var(--africa)' },
+      { id: 'zone-oceania', name: '오세아니아', color: 'var(--oceania)' }
+    ];
+
+    let isDrawing = false;
+
+    function togglePanel() {
+      controlPanel.classList.toggle('hidden');
+    }
+
+    function resetDraw() {
+      continents.forEach(c => {
+        document.getElementById(c.id).innerHTML = '';
+      });
+      document.querySelectorAll('.flag-drop').forEach(el => el.remove());
+      isDrawing = false;
+    }
+
+    // 모둠 번호가 적힌 깃발 모양 생성기
+    function getFlagSvg(number, color) {
+      return `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 120">
+        <path d="M10,120 L10,10 L90,30 L10,50" fill="none" stroke="${encodeURIComponent(color)}" stroke-width="6"/>
+        <polygon points="10,10 90,30 10,50" fill="${encodeURIComponent(color)}"/>
+        <text x="35" y="38" font-family="Arial" font-weight="bold" font-size="28" fill="white">${number}</text>
+      </svg>`;
+    }
+
+    async function startDraw() {
+      if (isDrawing) return;
+      resetDraw();
+      controlPanel.classList.add('hidden');
+      isDrawing = true;
+
+      // 1부터 6까지 모둠 번호 생성 및 셔플
+      let groupNumbers = [1, 2, 3, 4, 5, 6];
+      for (let i = groupNumbers.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [groupNumbers[i], groupNumbers[j]] = [groupNumbers[j], groupNumbers[i]];
+      }
+
+      // 대륙 순서대로 섞인 모둠 번호 할당 및 애니메이션
+      for (let i = 0; i < continents.length; i++) {
+        await drawOneGroup(groupNumbers[i], i);
+      }
+      
+      isDrawing = false;
+      setTimeout(() => { controlPanel.classList.remove('hidden'); }, 1000); 
+    }
+
+    function drawOneGroup(groupNum, index) {
+      return new Promise(resolve => {
+        const targetContinent = continents[index];
+        const zoneEl = document.getElementById(targetContinent.id);
+        
+        const flag = document.createElement('div');
+        flag.className = 'flag-drop';
+        flag.style.backgroundImage = `url('${getFlagSvg(groupNum, targetContinent.color)}')`;
+        document.body.appendChild(flag);
+
+        const zoneRect = zoneEl.getBoundingClientRect();
+        const targetX = zoneRect.left + (zoneRect.width / 2) - 30;
+        const targetY = zoneRect.top + (zoneRect.height / 2) - 40;
+
+        flag.style.setProperty('--startX', `${window.innerWidth / 2 - 30}px`);
+        flag.style.setProperty('--startY', `-150px`);
+        flag.style.setProperty('--endX', `${targetX}px`);
+        flag.style.setProperty('--endY', `${targetY}px`);
+        
+        flag.style.animation = 'flyIn 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards';
+
+        setTimeout(() => {
+          flag.remove(); 
+
+          const badge = document.createElement('div');
+          badge.className = 'member-badge';
+          badge.textContent = `${groupNum}모둠`;
+          badge.style.borderColor = targetContinent.color;
+          badge.style.color = targetContinent.color;
+          zoneEl.appendChild(badge);
+
+          setTimeout(() => {
+            badge.style.opacity = '1';
+            badge.style.transform = 'translateY(0) scale(1)';
+          }, 30);
+          
+          setTimeout(() => {
+            resolve();
+          }, 600);
+
+        }, 800); 
+      });
+    }
+  </script>
+</body>
+</html>
